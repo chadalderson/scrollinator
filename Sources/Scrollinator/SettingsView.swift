@@ -27,17 +27,12 @@ struct PrompterSettings: View {
     @AppStorage(Pref.Key.countdown) private var countdown = Pref.Default.countdown
     @AppStorage(Pref.Key.hideFromCapture) private var hideFromCapture = Pref.Default.hideFromCapture
 
-    private var textColor: Binding<Color> {
-        Binding(
-            get: { Color(nsColor: NSColor(hex: textColorHex) ?? .white) },
-            set: { textColorHex = NSColor($0).hexString }
-        )
-    }
+    private var textColor: Color { Color(nsColor: NSColor(hex: textColorHex) ?? .white) }
 
     var body: some View {
         Form {
             Section {
-                PrompterPreview(fontSize: fontSize, color: textColor.wrappedValue)
+                PrompterPreview(fontSize: fontSize, color: textColor)
                     .listRowInsets(EdgeInsets())
             }
             Section("Text") {
@@ -50,7 +45,9 @@ struct PrompterSettings: View {
                             .frame(width: 42, alignment: .trailing)
                     }
                 }
-                ColorPicker("Color", selection: textColor, supportsOpacity: false)
+                LabeledContent("Color") {
+                    ColorSwatches(selection: $textColorHex)
+                }
             }
             Section("Behavior") {
                 Picker("Countdown before starting", selection: $countdown) {
@@ -65,6 +62,39 @@ struct PrompterSettings: View {
         }
         .formStyle(.grouped)
         .frame(height: 500)
+    }
+}
+
+/// Pastel text colors that stay easy to read on the black prompter.
+private struct ColorSwatches: View {
+    @Binding var selection: String
+
+    private static let swatches: [(name: String, hex: String)] = [
+        ("White", "#FFFFFF"), ("Red", "#FF9E9E"), ("Orange", "#FFC79E"), ("Yellow", "#FFF09E"),
+        ("Green", "#A4F0C5"), ("Blue", "#A3D2FF"), ("Purple", "#CDB4FF"), ("Pink", "#FFB3DE"),
+    ]
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ForEach(Self.swatches, id: \.hex) { swatch in
+                let selected = swatch.hex.caseInsensitiveCompare(selection) == .orderedSame
+                Button {
+                    selection = swatch.hex
+                } label: {
+                    Circle()
+                        .fill(Color(nsColor: NSColor(hex: swatch.hex) ?? .white))
+                        .frame(width: 20, height: 20)
+                        .overlay(Circle().strokeBorder(Color.black.opacity(0.25)))
+                        .padding(3)
+                        .overlay(Circle().strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 2))
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help(swatch.name)
+                .accessibilityLabel(swatch.name)
+                .accessibilityAddTraits(selected ? .isSelected : [])
+            }
+        }
     }
 }
 
