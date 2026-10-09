@@ -63,11 +63,9 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
         start(script, testDrive: false)
     }
 
-    /// Opens the real prompter with a practice script so settings can be tried while reading.
+    /// Opens the real prompter with the practice script so settings can be tried while reading.
     func testDrive() {
-        let chosen = UserDefaults.standard.string(forKey: Pref.Key.testDriveScript) ?? ""
-        let script = store.scripts.first { $0.id.uuidString == chosen } ?? .practice
-        start(script, testDrive: true)
+        start(.practice, testDrive: true)
     }
 
     private func start(_ script: Script, testDrive: Bool) {

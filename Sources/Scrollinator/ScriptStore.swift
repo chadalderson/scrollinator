@@ -89,31 +89,34 @@ final class ScriptStore: ObservableObject {
 }
 
 extension Script {
-    /// Built-in practice text for test-driving settings: the opening of The Terminator (1984),
-    /// screenplay by James Cameron and Gale Anne Hurd. Never saved to the library.
+    /// The practice text for test-driving settings: an original parody. Never saved to the library.
     static let practice = Script(
         id: UUID(uuidString: "5C0111A7-0000-4000-8000-000000000001")!,
-        title: "The Terminator (opening scene)",
+        title: "The Scrollinator",
         body: """
-        Silence. Gradually the sound of distant traffic becomes audible. A LOW ANGLE bounded on one side by a chain-link fence and on the other by the one-story public school buildings. Spray-can hieroglyphics and distant streetlight shadows. This is a Los Angeles public school in a blue collar neighborhood.
+        INT. HOME OFFICE - NIGHT
 
-        ANGLE BETWEEN SCHOOL BUILDINGS, where a trash dumpster looms in a LOW ANGLE, part of the clutter behind the gymnasium. A CAT enters FRAME. CAMERA DOLLIES FORWARD, prowling with him through the landscape of trash receptacles and shadows.
+        A ring light hums. Lightning flickers across a webcam. Blue static gathers above the desk, and a figure rises out of it, wearing very dark sunglasses.
 
-        CLOSE ON CAT, which freezes, alert, sensing something just beyond human perception.
+        SCROLLINATOR: I am the Scrollinator. I have been sent back in time to protect your presentation.
 
-        A sourceless wind rises, and with it a keening WHINE. Papers blow across the pavement. The cat YOWLS and hides under the dumpster. Windows rattle in their frames. The WHINE intensifies, accompanied now by a wash of frigid PURPLE LIGHT. A CONCUSSION like a thunderclap right overhead blows in all the windows facing the yard.
+        Somewhere in the future, a meeting goes terribly wrong. The speaker looks down at their notes. They lose eye contact. They say "um" forty-seven times. Nobody remembers the quarterly numbers.
 
-        C.U. - CAT, its eyes are wide as the glare dies.
+        I cannot let that happen.
 
-        ELECTRICAL DISCHARGES arc from the dumpster to a water faucet and climb a drain pipe like a Jacob's Ladder.
+        Read these words out loud. When you speak, I scroll. When you pause, I wait. I do not get tired. I do not get bored. And I absolutely will not stop until you reach the end of your script.
 
-        SLOW PAN as the sound of stray electrical CRACKLING subsides. FRAME comes to rest on the figure of a NAKED MAN kneeling, faced away, in the previously empty yard. He stands, slowly. The man is in his late thirties, tall and powerfully built, moving with graceful precision.
+        Try going faster. I will keep up. Now slow down, as if you were explaining something important to a very nervous robot. I can do that too.
 
-        C.U. - MAN, his facial features reiterate the power of his body and are dominated by the eyes, which are intense, blue and depthless. His hair is military short.
+        Go ahead and ad-lib. Tell me about your weekend. Watch the waveform at the bottom turn white while you wander off script, and green again when you come back. I will be right here, on the line you left.
 
-        This man is the TERMINATOR.
+        Now adjust your settings while you read. Make the text bigger. Change the color. Turn the sensitivity up or down until only your voice moves the words.
 
-        He glances down, taking calm inventory of himself, and notices that a fine white ash covers his skin. He brushes at it unconcernedly as he walks toward the fence, scanning his surroundings.
+        When everything feels right, close the prompter. Your settings are already saved.
+
+        Remember: the future is not set. There is no fate but what we read.
+
+        I'll be back. On the next line.
         """
     )
 

@@ -54,8 +54,9 @@ it, ship it.
 ### Test drive your settings
 - The Prompter, Scrolling and Microphone settings have a **Test drive** button. It opens the real
   prompter with a practice script while Settings stays open, so you can change size, color, speed or
-  sensitivity and feel the difference as you read. The built-in practice script is the opening scene
-  of *The Terminator*; you can pick any of your own scripts instead. Test drives are never recorded.
+  sensitivity and feel the difference as you read. The practice script is a short parody scene in
+  which the Scrollinator is sent back in time to save your presentation. Test drives are never
+  recorded.
 
 ### Stays out of the way
 - **Hidden from screen sharing and screenshots.** Zoom, Meet, Teams and screen recordings don't see
@@ -172,9 +173,8 @@ build doesn't use it at all.
 ## Credits
 
 Inspired by [Moody](https://moody.mjarosz.com). The name and the 16-bit icon are a parody of, and an
-affectionate nod to, a certain 1984 movie about a very persistent cyborg. The built-in practice script
-is the opening of *The Terminator* (1984) screenplay by James Cameron and Gale Anne Hurd. No
-affiliation with or endorsement by anyone involved.
+affectionate nod to, a certain 1984 movie about a very persistent cyborg. No affiliation with or
+endorsement by anyone involved.
 
 **Publishing your own copy?** Swap the icon first: the App Store rejects apps that use a real
 person's likeness without permission. Delete `Resources/AppIcon.png` and the build falls back to an
