@@ -584,7 +584,7 @@ struct RecordingSettings: View {
             Section {
                 Toggle(isOn: $recordSessions) {
                     Text("Record my voice while prompting")
-                    Text("Saves an \(format) for each session, from Start Prompting until you close the prompter.")
+                    Text("Saves an \(format) for each session, from Start Prompting until you press End.")
                 }
             }
             Section("Save recordings to") {
