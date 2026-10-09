@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/prompter.png" width="760" alt="The prompter hanging from a MacBook notch: an End button, pause, a recording timer, the speaker's live 158 wpm pace, a green follow dot, mint script text and a green waveform">
+  <img src="docs/settings-tour.gif" width="771" alt="A tour of The Scrollinator's settings, all black with red highlights, cycling through the Prompter, Scrolling, Microphone, Recording and Shortcuts tabs beside the pixel-art artwork and credits">
 </p>
 
 ---
@@ -100,6 +100,13 @@ Scripts, settings, audio and recordings stay on your Mac. Speech recognition run
 download is macOS fetching its speech model the first time. No analytics, no accounts.
 
 ## Screenshots
+
+**The prompter:** hangs from the notch, with End, pause, the recording timer, your live pace and the
+follow dot along the top, and the waveform underneath.
+
+<p align="center">
+  <img src="docs/prompter.png" width="760" alt="The prompter hanging from a MacBook notch: an End button, pause, a recording timer, the speaker's live 158 wpm pace, a green follow dot, mint script text and a green waveform">
+</p>
 
 **Scripts:** write and pick scripts, then Start Prompting (⌘↩).
 
@@ -295,9 +302,9 @@ build doesn't use it at all.
 ## Credits
 
 Made by Chad Alderson ([@chadalderson on X](https://x.com/chadalderson)), creator of
-[Barbless.co](https://barbless.co). Inspired by [Moody](https://moody.mjarosz.com). The name and the
-16-bit icon are a parody of, and an affectionate nod to, a certain 1984 movie about a very persistent
-cyborg. No affiliation with or endorsement by anyone involved.
+[Barbless.co](https://barbless.co). The name and the 16-bit icon are a parody of, and an affectionate
+nod to, a certain 1984 movie about a very persistent cyborg. No affiliation with or endorsement by
+anyone involved.
 
 **Publishing your own copy?** Swap the icon first: the App Store rejects apps that use a real
 person's likeness without permission. Delete `Resources/AppIcon.png` and the build falls back to an
