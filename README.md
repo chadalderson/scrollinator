@@ -83,8 +83,7 @@ download is macOS fetching its speech model the first time. No analytics, no acc
 ## Settings
 
 <p align="center">
-  <img src="docs/settings-scrolling.png" width="420" alt="Scrolling settings: Voice activated and Constant speed tiles, Follow my words, and speed">
-  <img src="docs/settings-prompter.png" width="420" alt="Prompter settings: a live preview, text size and color, countdown, and hide from screen sharing">
+  <img src="docs/settings-prompter.png" width="770" alt="Settings: the Scrollinator artwork and credits on the left, and the Prompter tab with a live preview, text size, pastel color swatches, countdown and hide from screen sharing">
 </p>
 
 Five tabs: **Prompter** (live preview, size, color, countdown, screen-share hiding), **Scrolling**

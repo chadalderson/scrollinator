@@ -1,21 +1,83 @@
 import SwiftUI
 
-/// Settings window: one tab per area, each with its own icon.
+/// Settings window: one tab per area, each with its own icon, beside the artwork and credits.
 struct SettingsView: View {
     var body: some View {
         TabView {
-            PrompterSettings()
+            WithCredits { PrompterSettings() }
                 .tabItem { Label("Prompter", systemImage: "text.viewfinder") }
-            ScrollingSettings()
+            WithCredits { ScrollingSettings() }
                 .tabItem { Label("Scrolling", systemImage: "scroll") }
-            MicrophoneSettings()
+            WithCredits { MicrophoneSettings() }
                 .tabItem { Label("Microphone", systemImage: "mic") }
-            RecordingSettings()
+            WithCredits { RecordingSettings() }
                 .tabItem { Label("Recording", systemImage: "record.circle") }
-            ShortcutSettings()
+            WithCredits { ShortcutSettings() }
                 .tabItem { Label("Shortcuts", systemImage: "keyboard") }
         }
-        .frame(width: 520)
+    }
+}
+
+/// Every tab shares the credits panel on the left and the same size, so the window holds still.
+struct WithCredits<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        HStack(spacing: 0) {
+            CreditsPanel().frame(width: 250)
+            content.frame(width: 520)
+        }
+        .frame(height: 500)
+    }
+}
+
+/// The app's artwork with credits for its creator.
+private struct CreditsPanel: View {
+    private static let x = URL(string: "https://x.com/chadalderson")!
+    private static let barbless = URL(string: "https://barbless.co")!
+    private static let repo = URL(string: "https://github.com/chadalderson/scrollinator")!
+    /// The poster's red, for links.
+    private static let red = Color(red: 1, green: 0.36, blue: 0.33)
+
+    /// The full artwork the build bundles from Resources/AppIcon.png; the app icon otherwise.
+    private var artwork: NSImage { NSImage(named: "Artwork") ?? NSApp.applicationIconImage }
+
+    private var version: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Image(nsImage: artwork)
+                .resizable()
+                .aspectRatio(1, contentMode: .fit)
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Made by").font(.caption).foregroundStyle(.secondary)
+                    Text("Chad Alderson").font(.title3.weight(.semibold))
+                }
+                Link(destination: Self.x) {
+                    Label("Follow @chadalderson on X", systemImage: "at")
+                }
+                .foregroundStyle(Self.red)
+                Link(destination: Self.barbless) {
+                    Label("Creator of Barbless.co", systemImage: "arrow.up.right.square")
+                }
+                .foregroundStyle(Self.red)
+                Spacer(minLength: 0)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Version \(version) · free and open source")
+                    Link("github.com/chadalderson/scrollinator", destination: Self.repo)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+            .font(.callout)
+            .padding(16)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.black)
+        .environment(\.colorScheme, .dark)
     }
 }
 
@@ -61,7 +123,6 @@ struct PrompterSettings: View {
             }
         }
         .formStyle(.grouped)
-        .frame(height: 500)
     }
 }
 
@@ -173,7 +234,6 @@ struct ScrollingSettings: View {
             }
         }
         .formStyle(.grouped)
-        .frame(height: 400)
     }
 }
 
@@ -323,7 +383,6 @@ struct MicrophoneSettings: View {
             }
         }
         .formStyle(.grouped)
-        .frame(height: 290)
         .onAppear { voice.acquire("settings") }
         .onDisappear { voice.release("settings") }
     }
@@ -424,7 +483,6 @@ struct RecordingSettings: View {
             }
         }
         .formStyle(.grouped)
-        .frame(height: 350)
     }
 
     /// The folder's own icon once it exists; a plain folder until the first recording creates it.
@@ -471,7 +529,6 @@ struct ShortcutSettings: View {
             }
         }
         .formStyle(.grouped)
-        .frame(height: 390)
     }
 }
 

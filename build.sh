@@ -86,6 +86,8 @@ if [[ ! -f "$ICON" || scripts/make-icon.swift -nt "$ICON" || ( -f "$ART" && "$AR
     rm -rf "build.noindex/AppIcon.iconset"
 fi
 cp "$ICON" "$APP/Contents/Resources/AppIcon.icns"
+# The full artwork also shows beside Settings.
+[[ -f "$ART" ]] && cp "$ART" "$APP/Contents/Resources/Artwork.png"
 cp Resources/PrivacyInfo.xcprivacy "$APP/Contents/Resources/"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
