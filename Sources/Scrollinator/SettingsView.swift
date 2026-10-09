@@ -140,6 +140,19 @@ private struct BlackWindow: NSViewRepresentable {
     }
 }
 
+private extension View {
+    /// The pointing-hand cursor while hovering, as links show on the web.
+    @ViewBuilder func linkCursor() -> some View {
+        if #available(macOS 15, *) {
+            pointerStyle(.link)
+        } else {
+            onHover { inside in
+                if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+            }
+        }
+    }
+}
+
 /// Grouped settings on black, with near-black cards.
 private extension View {
     func blackForm() -> some View {
@@ -176,14 +189,17 @@ private struct CreditsPanel: View {
                     Label("Follow @chadalderson on X", systemImage: "at")
                 }
                 .foregroundStyle(Theme.red)
+                .linkCursor()
                 Link(destination: Self.barbless) {
                     Label("Creator of Barbless.co", systemImage: "arrow.up.right.square")
                 }
                 .foregroundStyle(Theme.red)
+                .linkCursor()
                 Spacer(minLength: 0)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Version \(version) · free and open source")
                     Link("github.com/chadalderson/scrollinator", destination: Self.repo)
+                        .linkCursor()
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
