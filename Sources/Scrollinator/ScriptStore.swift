@@ -62,6 +62,9 @@ final class ScriptStore: ObservableObject {
             get: { self.scripts.first(where: { $0.id == id }) ?? initial },
             set: { newValue in
                 guard let i = self.scripts.firstIndex(where: { $0.id == id }) else { return }
+                // Text views can write back unchanged values; only real edits count as an update.
+                let current = self.scripts[i]
+                guard newValue.title != current.title || newValue.body != current.body else { return }
                 var updated = newValue
                 updated.updatedAt = Date()
                 self.scripts[i] = updated

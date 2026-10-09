@@ -44,16 +44,17 @@ private struct ScriptSidebar: View {
     @Binding var selection: Script.ID?
     var delete: (Script.ID) -> Void
 
-    private var artwork: NSImage { NSImage(named: "Artwork") ?? NSApp.applicationIconImage }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                Image(nsImage: artwork)
+            HStack(spacing: 8) {
+                // The app icon itself, rounded square and shadow included, as it looks in the Dock.
+                Image(nsImage: NSApp.applicationIconImage)
                     .resizable()
-                    .frame(width: 30, height: 30)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                VStack(alignment: .leading, spacing: 0) {
+                    .interpolation(.high)
+                    .frame(width: 46, height: 46)
+                    .padding(-4)
+                VStack(alignment: .leading, spacing: 1) {
                     Text("THE SCROLLINATOR")
                         .font(.system(size: 9, weight: .heavy))
                         .foregroundStyle(Theme.red)
