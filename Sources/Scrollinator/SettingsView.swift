@@ -122,8 +122,8 @@ private struct SettingsTabBar: View {
     }
 }
 
-/// Paints the Settings window itself black, title bar included.
-private struct BlackWindow: NSViewRepresentable {
+/// Paints the hosting window itself black, title bar included (Settings and Scripts).
+struct BlackWindow: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView { Hook() }
     func updateNSView(_ nsView: NSView, context: Context) {}
 
