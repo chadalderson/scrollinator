@@ -83,7 +83,7 @@ download is macOS fetching its speech model the first time. No analytics, no acc
 ## Settings
 
 <p align="center">
-  <img src="docs/settings-prompter.png" width="770" alt="Settings: the Scrollinator artwork and credits on the left, and the Prompter tab with a live preview, text size, pastel color swatches, countdown and hide from screen sharing">
+  <img src="docs/settings-prompter.png" width="771" alt="Settings, all black with red highlights: the Scrollinator artwork and credits on the left, and the Prompter tab with a live preview, text size, pastel color swatches, countdown and hide from screen sharing">
 </p>
 
 Five tabs: **Prompter** (live preview, size, color, countdown, screen-share hiding), **Scrolling**

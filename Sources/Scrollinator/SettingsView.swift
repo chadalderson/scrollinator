@@ -1,33 +1,114 @@
 import SwiftUI
 
-/// Settings window: one tab per area, each with its own icon, beside the artwork and credits.
-struct SettingsView: View {
-    var body: some View {
-        TabView {
-            WithCredits { PrompterSettings() }
-                .tabItem { Label("Prompter", systemImage: "text.viewfinder") }
-            WithCredits { ScrollingSettings() }
-                .tabItem { Label("Scrolling", systemImage: "scroll") }
-            WithCredits { MicrophoneSettings() }
-                .tabItem { Label("Microphone", systemImage: "mic") }
-            WithCredits { RecordingSettings() }
-                .tabItem { Label("Recording", systemImage: "record.circle") }
-            WithCredits { ShortcutSettings() }
-                .tabItem { Label("Shortcuts", systemImage: "keyboard") }
+/// Settings colors: black throughout, with the poster's red for highlights.
+enum Theme {
+    static let red = Color(red: 1, green: 0.30, blue: 0.27)
+    static let background = Color.black
+    static let card = Color(white: 0.075)
+    static let line = Color(white: 0.16)
+}
+
+enum SettingsTab: String, CaseIterable, Identifiable {
+    case prompter, scrolling, microphone, recording, shortcuts
+
+    var id: String { rawValue }
+    var title: String { rawValue.capitalized }
+    var icon: String {
+        switch self {
+        case .prompter: return "text.viewfinder"
+        case .scrolling: return "scroll"
+        case .microphone: return "mic"
+        case .recording: return "record.circle"
+        case .shortcuts: return "keyboard"
         }
     }
 }
 
-/// Every tab shares the credits panel on the left and the same size, so the window holds still.
-struct WithCredits<Content: View>: View {
-    @ViewBuilder var content: Content
+/// Settings window: the artwork and credits on the left; on the right, a tab bar and the
+/// selected tab's settings. All black with red highlights, in light mode or dark.
+struct SettingsView: View {
+    @State var tab: SettingsTab = .prompter
 
     var body: some View {
         HStack(spacing: 0) {
             CreditsPanel().frame(width: 250)
-            content.frame(width: 520)
+            Rectangle().fill(Theme.line).frame(width: 1)
+            VStack(spacing: 0) {
+                SettingsTabBar(selection: $tab)
+                Rectangle().fill(Theme.line).frame(height: 1)
+                Group {
+                    switch tab {
+                    case .prompter: PrompterSettings()
+                    case .scrolling: ScrollingSettings()
+                    case .microphone: MicrophoneSettings()
+                    case .recording: RecordingSettings()
+                    case .shortcuts: ShortcutSettings()
+                    }
+                }
+                .frame(maxHeight: .infinity, alignment: .top)
+            }
+            .frame(width: 520)
         }
-        .frame(height: 500)
+        .frame(height: 560)
+        .background(Theme.background.ignoresSafeArea())
+        .tint(Theme.red)
+        .environment(\.colorScheme, .dark)
+        .background(BlackWindow())
+    }
+}
+
+private struct SettingsTabBar: View {
+    @Binding var selection: SettingsTab
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(SettingsTab.allCases) { tab in
+                let selected = tab == selection
+                Button {
+                    selection = tab
+                } label: {
+                    VStack(spacing: 3) {
+                        Image(systemName: tab.icon).font(.system(size: 17)).frame(height: 22)
+                        Text(tab.title).font(.caption)
+                    }
+                    .frame(width: 84, height: 46)
+                    .foregroundStyle(selected ? Theme.red : Color(white: 0.6))
+                    .background(RoundedRectangle(cornerRadius: 8).fill(selected ? Theme.red.opacity(0.14) : .clear))
+                    .contentShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(selected ? .isSelected : [])
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+    }
+}
+
+/// Paints the Settings window itself black, title bar included.
+private struct BlackWindow: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { Hook() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    final class Hook: NSView {
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard let window else { return }
+            window.appearance = NSAppearance(named: .darkAqua)
+            window.backgroundColor = .black
+            window.titlebarAppearsTransparent = true
+            window.titleVisibility = .hidden
+            window.styleMask.insert(.fullSizeContentView)
+        }
+    }
+}
+
+/// Grouped settings on black, with near-black cards.
+private extension View {
+    func blackForm() -> some View {
+        formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+            .background(Theme.background)
     }
 }
 
@@ -36,8 +117,6 @@ private struct CreditsPanel: View {
     private static let x = URL(string: "https://x.com/chadalderson")!
     private static let barbless = URL(string: "https://barbless.co")!
     private static let repo = URL(string: "https://github.com/chadalderson/scrollinator")!
-    /// The poster's red, for links.
-    private static let red = Color(red: 1, green: 0.36, blue: 0.33)
 
     /// The full artwork the build bundles from Resources/AppIcon.png; the app icon otherwise.
     private var artwork: NSImage { NSImage(named: "Artwork") ?? NSApp.applicationIconImage }
@@ -59,11 +138,11 @@ private struct CreditsPanel: View {
                 Link(destination: Self.x) {
                     Label("Follow @chadalderson on X", systemImage: "at")
                 }
-                .foregroundStyle(Self.red)
+                .foregroundStyle(Theme.red)
                 Link(destination: Self.barbless) {
                     Label("Creator of Barbless.co", systemImage: "arrow.up.right.square")
                 }
-                .foregroundStyle(Self.red)
+                .foregroundStyle(Theme.red)
                 Spacer(minLength: 0)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Version \(version) · free and open source")
@@ -122,7 +201,7 @@ struct PrompterSettings: View {
                 }
             }
         }
-        .formStyle(.grouped)
+        .blackForm()
     }
 }
 
@@ -147,7 +226,7 @@ private struct ColorSwatches: View {
                         .frame(width: 20, height: 20)
                         .overlay(Circle().strokeBorder(Color.black.opacity(0.25)))
                         .padding(3)
-                        .overlay(Circle().strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 2))
+                        .overlay(Circle().strokeBorder(selected ? Theme.red : .clear, lineWidth: 2))
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
@@ -233,7 +312,7 @@ struct ScrollingSettings: View {
                 }
             }
         }
-        .formStyle(.grouped)
+        .blackForm()
     }
 }
 
@@ -249,7 +328,7 @@ private struct ModeTile: View {
             VStack(alignment: .leading, spacing: 6) {
                 Image(systemName: icon)
                     .font(.title2)
-                    .foregroundStyle(selected ? Color.accentColor : .secondary)
+                    .foregroundStyle(selected ? Theme.red : .secondary)
                 Text(title).font(.headline)
                 Text(caption).font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -258,11 +337,11 @@ private struct ModeTile: View {
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(selected ? Color.accentColor.opacity(0.15) : Color.primary.opacity(0.04))
+                    .fill(selected ? Theme.red.opacity(0.15) : Color.primary.opacity(0.04))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(selected ? Color.accentColor : Color.primary.opacity(0.1), lineWidth: selected ? 2 : 1)
+                    .strokeBorder(selected ? Theme.red : Color.primary.opacity(0.1), lineWidth: selected ? 2 : 1)
             )
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
@@ -382,7 +461,7 @@ struct MicrophoneSettings: View {
                 }
             }
         }
-        .formStyle(.grouped)
+        .blackForm()
         .onAppear { voice.acquire("settings") }
         .onDisappear { voice.release("settings") }
     }
@@ -482,7 +561,7 @@ struct RecordingSettings: View {
                        text: "A red dot and timer show on the prompter while it records. Mono \(format), 128 kbps.")
             }
         }
-        .formStyle(.grouped)
+        .blackForm()
     }
 
     /// The folder's own icon once it exists; a plain folder until the first recording creates it.
@@ -528,7 +607,7 @@ struct ShortcutSettings: View {
                 Text("These work from any app, even while the prompter is in the background.")
             }
         }
-        .formStyle(.grouped)
+        .blackForm()
     }
 }
 
