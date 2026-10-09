@@ -299,7 +299,7 @@ private struct PrompterPreview: View {
     @AppStorage(Pref.Key.prompterWidth) private var prompterWidth = Pref.Default.prompterWidth
     @AppStorage(Pref.Key.prompterHeight) private var prompterHeight = Pref.Default.prompterHeight
 
-    private static let sample = "Good morning, everyone, and thanks for joining. I want to start with the results from the last three months, because they surprised all of us."
+    private static let sample = "Your clothes. Give them to me. Now."
 
     var body: some View {
         GeometryReader { geo in
