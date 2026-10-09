@@ -4,6 +4,9 @@
 # LAME is LGPL; the app's full source ships alongside it, so it can always be relinked.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# build.sh's INSTALL=1 means "copy to /Applications", but autotools reads INSTALL as the path to
+# the install program, so `make install` would try to run "1". Keep it out of LAME's build.
+unset INSTALL
 
 VERSION="3.100"
 TARBALL="vendor/lame-$VERSION.tar.gz"
