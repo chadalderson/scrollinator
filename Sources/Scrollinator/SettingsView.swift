@@ -13,6 +13,8 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var title: String { rawValue.capitalized }
+    /// Tabs whose settings change how the prompter looks or behaves, so they offer a test drive.
+    var canTestDrive: Bool { self == .prompter || self == .scrolling || self == .microphone }
     var icon: String {
         switch self {
         case .prompter: return "text.viewfinder"
@@ -46,14 +48,77 @@ struct SettingsView: View {
                     }
                 }
                 .frame(maxHeight: .infinity, alignment: .top)
+                if tab.canTestDrive {
+                    Rectangle().fill(Theme.line).frame(height: 1)
+                    TestDriveBar()
+                }
             }
             .frame(width: 520)
         }
-        .frame(height: 560)
+        .frame(height: 660)
         .background(Theme.background.ignoresSafeArea())
         .tint(Theme.red)
         .environment(\.colorScheme, .dark)
         .background(BlackWindow())
+    }
+}
+
+/// Opens the real prompter with a practice script, so settings can be dialed in while reading.
+private struct TestDriveBar: View {
+    @ObservedObject private var prompter = PrompterController.shared
+    @ObservedObject private var store = ScriptStore.shared
+    @AppStorage(Pref.Key.testDriveScript) private var scriptID = ""
+
+    /// Falls back to the built-in script if the chosen one was deleted.
+    private var selection: Binding<String> {
+        Binding(
+            get: { store.scripts.contains { $0.id.uuidString == scriptID } ? scriptID : "" },
+            set: { scriptID = $0 }
+        )
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                Image(systemName: "steeringwheel")
+                    .font(.system(size: 24))
+                    .foregroundStyle(Theme.red)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Test drive these settings").font(.headline)
+                    Text("Read in the real prompter; changes apply as you go.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                if prompter.isTestDriving {
+                    Button("Stop", systemImage: "stop.fill") { prompter.hide() }
+                        .controlSize(.large)
+                } else {
+                    Button("Start", systemImage: "play.fill") { prompter.testDrive() }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                }
+            }
+            HStack(spacing: 8) {
+                Text("Practice script").font(.caption).foregroundStyle(.secondary)
+                Picker("Practice script", selection: selection) {
+                    Text(Script.practice.title).tag("")
+                    if !store.scripts.isEmpty { Divider() }
+                    ForEach(store.scripts) { Text($0.title).tag($0.id.uuidString) }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .controlSize(.small)
+                .fixedSize()
+            }
+            .padding(.leading, 40)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .background(Theme.card)
+        .onChange(of: scriptID) {
+            if prompter.isTestDriving { prompter.testDrive() }
+        }
     }
 }
 

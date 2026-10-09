@@ -51,6 +51,12 @@ it, ship it.
   background noise and any microphone, including multichannel interfaces.
 - **Constant speed mode** for when you don't want the mic involved, in words per minute.
 
+### Test drive your settings
+- The Prompter, Scrolling and Microphone settings have a **Test drive** button. It opens the real
+  prompter with a practice script while Settings stays open, so you can change size, color, speed or
+  sensitivity and feel the difference as you read. The built-in practice script is the opening scene
+  of *The Terminator*; you can pick any of your own scripts instead. Test drives are never recorded.
+
 ### Stays out of the way
 - **Hidden from screen sharing and screenshots.** Zoom, Meet, Teams and screen recordings don't see
   it.
@@ -83,11 +89,12 @@ download is macOS fetching its speech model the first time. No analytics, no acc
 ## Settings
 
 <p align="center">
-  <img src="docs/settings-prompter.png" width="771" alt="Settings, all black with red highlights: the Scrollinator artwork and credits on the left, and the Prompter tab with a live preview, text size, pastel color swatches, countdown and hide from screen sharing">
+  <img src="docs/settings-prompter.png" width="771" alt="Settings, all black with red highlights: the Scrollinator artwork and credits on the left, and the Prompter tab with a live preview, text size, pastel color swatches, countdown, hide from screen sharing, and a Test drive bar">
 </p>
 
 Five tabs: **Prompter** (live preview, size, color, countdown, screen-share hiding), **Scrolling**
-(mode, follow my words, speed), **Microphone** (live input meter and sensitivity), **Recording**
+(mode, follow my words, speed), **Microphone** (live input meter and sensitivity), each with a
+**Test drive** button, **Recording**
 (on/off, folder, last recording) and **Shortcuts**.
 
 ## Requirements
@@ -165,8 +172,9 @@ build doesn't use it at all.
 ## Credits
 
 Inspired by [Moody](https://moody.mjarosz.com). The name and the 16-bit icon are a parody of, and an
-affectionate nod to, a certain 1984 movie about a very persistent cyborg. No affiliation with or
-endorsement by anyone involved.
+affectionate nod to, a certain 1984 movie about a very persistent cyborg. The built-in practice script
+is the opening of *The Terminator* (1984) screenplay by James Cameron and Gale Anne Hurd. No
+affiliation with or endorsement by anyone involved.
 
 **Publishing your own copy?** Swap the icon first: the App Store rejects apps that use a real
 person's likeness without permission. Delete `Resources/AppIcon.png` and the build falls back to an

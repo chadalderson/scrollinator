@@ -26,6 +26,8 @@ enum Pref {
         static let recordSessions = "recordSessions"
         static let recordingFolder = "recordingFolder"
         static let recordingFolderBookmark = "recordingFolderBookmark"
+        /// A script ID from the library, or empty for the built-in practice script.
+        static let testDriveScript = "testDriveScript"
         static let prompterWidth = "prompterWidth"
         static let prompterHeight = "prompterHeight"
     }

@@ -11,6 +11,8 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
 
     @Published private(set) var isVisible = false
     @Published private(set) var isPlaying = false
+    /// Reading a practice script from Settings; never recorded.
+    @Published private(set) var isTestDriving = false
 
     private let voice = VoiceDetector.shared
     private let store = ScriptStore.shared
@@ -58,6 +60,21 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
     // MARK: Commands
 
     func start(_ script: Script) {
+        start(script, testDrive: false)
+    }
+
+    /// Opens the real prompter with a practice script so settings can be tried while reading.
+    func testDrive() {
+        let chosen = UserDefaults.standard.string(forKey: Pref.Key.testDriveScript) ?? ""
+        let script = store.scripts.first { $0.id.uuidString == chosen } ?? .practice
+        start(script, testDrive: true)
+    }
+
+    private func start(_ script: Script, testDrive: Bool) {
+        if isTestDriving != testDrive {
+            isTestDriving = testDrive
+            if testDrive { recorder.stop() }
+        }
         let switching = isVisible && currentScriptID != script.id
         currentScriptID = script.id
         loadedBody = script.body
@@ -104,6 +121,7 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
         isPlaying = false
         countdownEnds = 0
         stopTimer()
+        isTestDriving = false
         updateVoiceUsage()
         updateRecording()
     }
@@ -255,7 +273,7 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
 
     /// Records while the prompter is showing and recording is on, from Start Prompting until it closes.
     private func updateRecording(newSession: Bool = false) {
-        guard isVisible && Pref.recordSessions else {
+        guard isVisible && Pref.recordSessions && !isTestDriving else {
             recorder.stop()
             return
         }
