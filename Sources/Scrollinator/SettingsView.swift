@@ -291,25 +291,39 @@ private struct ColorSwatches: View {
     }
 }
 
-/// A miniature prompter showing the chosen size and color.
+/// Your prompter in miniature: its real width and height scaled to fit, with the text scaled by
+/// the same amount, so it wraps and crops the way the prompter will.
 private struct PrompterPreview: View {
     var fontSize: Double
     var color: Color
+    @AppStorage(Pref.Key.prompterWidth) private var prompterWidth = Pref.Default.prompterWidth
+    @AppStorage(Pref.Key.prompterHeight) private var prompterHeight = Pref.Default.prompterHeight
+
+    private static let sample = "Good morning, everyone, and thanks for joining. I want to start with the results from the last three months, because they surprised all of us."
 
     var body: some View {
-        ZStack {
-            UnevenRoundedRectangle(bottomLeadingRadius: 16, bottomTrailingRadius: 16)
-                .fill(.black)
-            Text("Good morning, everyone, and thanks for joining.")
-                .font(.system(size: fontSize, weight: .semibold))
-                .foregroundStyle(color)
-                .lineLimit(2)
-                .minimumScaleFactor(0.4)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
+        GeometryReader { geo in
+            let width = max(prompterWidth, 260), height = max(prompterHeight, 110)
+            let scale = min(geo.size.width / width, geo.size.height / height)
+            // PrompterView's layout: 26 pt control band, 20 pt sides, 14 pt bottom, text 16% down.
+            let textTop = 26 + (height - 40) * 0.16
+            ZStack(alignment: .topLeading) {
+                UnevenRoundedRectangle(bottomLeadingRadius: 18 * scale, bottomTrailingRadius: 18 * scale)
+                    .fill(.black)
+                Text(Self.sample)
+                    .font(.system(size: fontSize * scale, weight: .semibold))
+                    .lineSpacing((fontSize * 0.18).rounded() * scale)
+                    .foregroundStyle(color)
+                    .frame(width: (width - 40) * scale, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 20 * scale)
+                    .padding(.top, textTop * scale)
+            }
+            .frame(width: width * scale, height: height * scale, alignment: .topLeading)
+            .clipped()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(height: 104)
+        .frame(height: 150)
         .padding(12)
     }
 }
