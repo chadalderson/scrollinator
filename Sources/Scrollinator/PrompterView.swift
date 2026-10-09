@@ -119,7 +119,8 @@ private final class WaveformView: NSView {
 }
 
 /// The prompter's content: black notch-shaped background, scrolling text with faded edges,
-/// a voice waveform along the bottom, play/pause and speed controls and a close button in the top band.
+/// a voice waveform along the bottom, and a top band with close and play/pause on the left, recording in
+/// the middle, and speed and the follow dot on the right.
 /// It handles its own mouse input (click icons, drag to move, corner to resize, wheel to scroll).
 final class PrompterView: NSView {
     var onTogglePause: (() -> Void)?
@@ -256,33 +257,40 @@ final class PrompterView: NSView {
         let iconSize: CGFloat = 16
         let iconY = ((band - iconSize) / 2).rounded()
 
-        playIcon.frame = NSRect(x: side - 2, y: iconY, width: iconSize, height: iconSize)
-        closeIcon.frame = NSRect(x: w - side - iconSize + 2, y: iconY, width: iconSize, height: iconSize)
-        // Speed sits on the left next to play/pause, clear of a camera notch in the middle.
-        // Kept compact so it ends left of a 14"/16" MacBook notch at the default width.
+        // Close on the left, where macOS puts it, then play/pause.
+        closeIcon.frame = NSRect(x: side - 2, y: iconY, width: iconSize, height: iconSize)
+        playIcon.frame = NSRect(x: closeIcon.frame.maxX + 10, y: iconY, width: iconSize, height: iconSize)
+
+        // Right: speed controls, then the follow dot at the edge.
+        followDot.frame = NSRect(x: w - side - 6, y: (iconY + iconSize / 2 - 3).rounded(), width: 6, height: 6)
         let small: CGFloat = 12
         let smallY = iconY + (iconSize - small) / 2
-        slowerIcon.frame = NSRect(x: playIcon.frame.maxX + 8, y: smallY, width: small, height: small)
-        let widest = NSAttributedString(string: "300 wpm", attributes: [.font: speedLabel.font as Any]).size()
+        let widest = NSAttributedString(string: "~300 wpm", attributes: [.font: speedLabel.font as Any]).size()
+        fasterIcon.frame = NSRect(x: followDot.frame.minX - 14 - small, y: smallY, width: small, height: small)
         speedLabel.frame = NSRect(
-            x: slowerIcon.frame.maxX + 2, y: (iconY + (iconSize - widest.height) / 2).rounded(),
+            x: fasterIcon.frame.minX - 2 - ceil(widest.width) - 4, y: (iconY + (iconSize - widest.height) / 2).rounded(),
             width: ceil(widest.width) + 4, height: ceil(widest.height)
         )
-        fasterIcon.frame = NSRect(x: speedLabel.frame.maxX + 2, y: smallY, width: small, height: small)
+        slowerIcon.frame = NSRect(x: speedLabel.frame.minX - 2 - small, y: smallY, width: small, height: small)
         if slowerIcon.isHidden {
-            // Read-only pace: no buttons, so start where "-" would be and take the room it leaves.
+            // Read-only pace: no buttons, so the label takes the room they leave, against the right edge.
             speedLabel.frame.origin.x = slowerIcon.frame.minX
             speedLabel.frame.size.width = fasterIcon.frame.maxX - slowerIcon.frame.minX
         }
-        speedLabel.alignment = slowerIcon.isHidden ? .left : .center
-        followDot.frame = NSRect(x: closeIcon.frame.minX - 14, y: (iconY + iconSize / 2 - 3).rounded(), width: 6, height: 6)
-        // Recording sits left of the follow dot: a red dot and the elapsed time.
+        speedLabel.alignment = slowerIcon.isHidden ? .right : .center
+
+        // Recording, a red dot and the elapsed time, sits in the middle of the bar. Under a camera
+        // notch the middle is hidden, so there it follows play/pause instead.
         let timeSize = recordLabel.intrinsicContentSize
+        let recordWidth = 10 + ceil(timeSize.width)
+        let recordX = attachedToTop && notchInset > 0
+            ? playIcon.frame.maxX + 12
+            : ((w - recordWidth) / 2).rounded()
+        recordDot.frame = NSRect(x: recordX, y: followDot.frame.minY, width: 6, height: 6)
         recordLabel.frame = NSRect(
-            x: followDot.frame.minX - 10 - ceil(timeSize.width), y: (iconY + (iconSize - timeSize.height) / 2).rounded(),
+            x: recordX + 10, y: (iconY + (iconSize - timeSize.height) / 2).rounded(),
             width: ceil(timeSize.width), height: ceil(timeSize.height)
         )
-        recordDot.frame = NSRect(x: recordLabel.frame.minX - 10, y: followDot.frame.minY, width: 6, height: 6)
         clip.frame = NSRect(x: side + 4, y: band, width: max(0, w - 2 * (side + 4)), height: max(0, h - band - 14))
         grip.frame = NSRect(x: w - 16, y: h - 16, width: 12, height: 12)
 
@@ -468,9 +476,9 @@ final class PrompterView: NSView {
 
     override func mouseDown(with event: NSEvent) {
         let p = convert(event.locationInWindow, from: nil)
-        if playIcon.frame.insetBy(dx: -8, dy: -8).contains(p) {
+        if playIcon.frame.insetBy(dx: -5, dy: -8).contains(p) {
             onTogglePause?()
-        } else if closeIcon.frame.insetBy(dx: -8, dy: -8).contains(p) {
+        } else if closeIcon.frame.insetBy(dx: -5, dy: -8).contains(p) {
             onClose?()
         } else if !slowerIcon.isHidden && slowerIcon.frame.insetBy(dx: -4, dy: -8).contains(p) {
             repeatWhileHeld(-1)

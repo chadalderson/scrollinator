@@ -69,7 +69,7 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
     private func start(_ script: Script, testDrive: Bool) {
         if isTestDriving != testDrive {
             isTestDriving = testDrive
-            if testDrive { recorder.stop() }
+            if testDrive { stopRecording() }
         }
         let switching = isVisible && currentScriptID != script.id
         currentScriptID = script.id
@@ -286,12 +286,26 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
     /// Records while the prompter is showing and recording is on, from Start Prompting until it closes.
     private func updateRecording(newSession: Bool = false) {
         guard isVisible && Pref.recordSessions && !isTestDriving else {
-            recorder.stop()
+            stopRecording()
             return
         }
         if newSession || !recorder.isRecording {
             let title = store.scripts.first { $0.id == currentScriptID }?.title ?? "Recording"
             recorder.start(title: title)
+        }
+    }
+
+    /// Stops any recording and confirms it on screen, so nobody wonders if it's still running.
+    private func stopRecording() {
+        guard let outcome = recorder.stop() else { return }
+        let screen = panel?.screen
+        switch outcome {
+        case .saved(let url):
+            StatusToast.shared.show(title: "Recording stopped", detail: "Saved \(url.deletingPathExtension().lastPathComponent)", on: screen) {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
+        case .tooShort:
+            StatusToast.shared.show(title: "Recording stopped", detail: "Nothing saved: it was under a second.", on: screen)
         }
     }
 

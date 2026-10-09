@@ -280,21 +280,30 @@ final class SessionRecorder: ObservableObject {
         scopedFolder = nil
     }
 
-    func stop() {
-        guard let writer else { return }
+    enum Outcome {
+        case saved(URL)
+        /// Under a second of audio, so nothing was kept.
+        case tooShort
+    }
+
+    /// Stops and finishes the file. Returns nil if nothing was recording.
+    @discardableResult
+    func stop() -> Outcome? {
+        guard let writer else { return nil }
         RecordingFeed.shared.attach(nil)
         voice.release("recorder")
         self.writer = nil
         startedAt = nil
         let seconds = writer.finish()
+        defer { endFolderAccess() }
         if seconds < 1 {
             // Nothing worth keeping (no audio arrived, or the prompter was closed right away).
             try? FileManager.default.removeItem(at: writer.url)
             if voice.permissionDenied { lastError = "Nothing was recorded: microphone access is off." }
-        } else {
-            lastSaved = writer.url
+            return .tooShort
         }
-        endFolderAccess()
+        lastSaved = writer.url
+        return .saved(writer.url)
     }
 
     /// "Welcome 2026-10-09 at 08.41.mp3" (or .m4a), numbered if that name is taken.
