@@ -1,0 +1,17 @@
+# SwiftPM build products (direct and App Store flavors)
+.build/
+.build-appstore/
+.swiftpm/
+
+# Built apps, zips and packages
+build.noindex/
+
+# LAME is downloaded and compiled by scripts/build-lame.sh; it is LGPL, so it stays out of the repo
+vendor/
+
+# Apple signing material never belongs in the repo
+*.provisionprofile
+*.p12
+*.cer
+
+.DS_Store
