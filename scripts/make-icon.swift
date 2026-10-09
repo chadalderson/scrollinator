@@ -1,7 +1,11 @@
-// Renders the app icon into an .iconset folder. Usage: swift scripts/make-icon.swift <out.iconset>
+// Renders the app icon into an .iconset folder.
 //
-// 16-bit style pixel art on a 64x64 grid: a chrome robot in wraparound shades, red rays behind it,
-// and its lenses glowing with the lines of a script. Each grid pixel becomes a hard-edged block.
+//   swift scripts/make-icon.swift <out.iconset>               the built-in pixel-art robot
+//   swift scripts/make-icon.swift <out.iconset> <art.png>     your own square artwork instead
+//
+// The built-in icon is 16-bit style pixel art on a 64x64 grid: a chrome robot in wraparound shades,
+// red rays behind it, and its lenses glowing with the lines of a script. Your own artwork is fitted
+// into the standard macOS rounded square, with the usual margin and shadow.
 import AppKit
 
 let out = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
@@ -170,7 +174,40 @@ for y in 0..<n { for x in 0..<n where !inBody(x, y) { grid[y * n + x] = nil } }
 
 // MARK: Render
 
+let artwork = CommandLine.arguments.count > 2 ? NSImage(contentsOfFile: CommandLine.arguments[2]) : nil
+if CommandLine.arguments.count > 2 && artwork == nil {
+    fatalError("Can't read artwork at \(CommandLine.arguments[2])")
+}
+
+/// Your artwork, clipped to the macOS icon shape: an 824-point rounded square centered in 1024.
+func renderArtwork(_ art: NSImage, _ px: Int) -> Data {
+    let rep = NSBitmapImageRep(
+        bitmapDataPlanes: nil, pixelsWide: px, pixelsHigh: px, bitsPerSample: 8, samplesPerPixel: 4,
+        hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
+    )!
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+    NSGraphicsContext.current?.imageInterpolation = .high
+    let s = CGFloat(px) / 1024
+    let body = NSRect(x: 100 * s, y: 100 * s, width: 824 * s, height: 824 * s)
+    let shape = NSBezierPath(roundedRect: body, xRadius: 185 * s, yRadius: 185 * s)
+    let shadow = NSShadow()
+    shadow.shadowColor = NSColor.black.withAlphaComponent(0.35)
+    shadow.shadowOffset = NSSize(width: 0, height: -10 * s)
+    shadow.shadowBlurRadius = 20 * s
+    NSGraphicsContext.saveGraphicsState()
+    shadow.set()
+    NSColor.black.setFill()
+    shape.fill()
+    NSGraphicsContext.restoreGraphicsState()
+    shape.addClip()
+    art.draw(in: body)
+    NSGraphicsContext.restoreGraphicsState()
+    return rep.representation(using: .png, properties: [:])!
+}
+
 func render(_ px: Int) -> Data {
+    if let artwork { return renderArtwork(artwork, px) }
     // Draw at 1024 with hard pixel edges, then let smaller sizes downsample smoothly.
     let big = 1024
     let rep = NSBitmapImageRep(

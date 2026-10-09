@@ -72,9 +72,16 @@ rm -rf "$OUT"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 lipo -create -output "$APP/Contents/MacOS/$EXECUTABLE" "${bins[@]}"
 
+# Resources/AppIcon.png, when present, replaces the built-in pixel-art icon.
 ICON="build.noindex/AppIcon.icns"
-if [[ ! -f "$ICON" ]]; then
-    swift scripts/make-icon.swift "build.noindex/AppIcon.iconset"
+ART="Resources/AppIcon.png"
+if [[ ! -f "$ICON" || scripts/make-icon.swift -nt "$ICON" || ( -f "$ART" && "$ART" -nt "$ICON" ) ]]; then
+    rm -rf "build.noindex/AppIcon.iconset"
+    if [[ -f "$ART" ]]; then
+        swift scripts/make-icon.swift "build.noindex/AppIcon.iconset" "$ART"
+    else
+        swift scripts/make-icon.swift "build.noindex/AppIcon.iconset"
+    fi
     iconutil -c icns "build.noindex/AppIcon.iconset" -o "$ICON"
     rm -rf "build.noindex/AppIcon.iconset"
 fi

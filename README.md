@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/icon.png" width="200" alt="The Scrollinator icon: a pixel-art robot in sunglasses whose lenses show lines of a script">
+  <img src="docs/icon.png" width="200" alt="The Scrollinator icon: a 16-bit pixel-art parody of a 1984 sci-fi movie poster, with red rays and THE SCROLLINATOR across the top">
 </p>
 
 <h1 align="center">The Scrollinator</h1>
@@ -144,7 +144,7 @@ script and press **Start Prompting** (⌘↩). Allow microphone and speech recog
 | `HotKeys.swift` | Global shortcuts via `RegisterEventHotKey` (no Accessibility permission needed) |
 | `ScriptStore.swift`, `EditorView.swift` | Scripts saved as JSON in Application Support, and the editor |
 | `SettingsView.swift`, `Prefs.swift` | The settings window and stored preferences |
-| `scripts/make-icon.swift` | Draws the pixel-art icon in code |
+| `scripts/make-icon.swift` | Builds the app icon from `Resources/AppIcon.png`, or draws a pixel-art robot if that file is missing |
 
 In development tests with synthesized speech whose pace swung between 140 and 220 wpm, following kept
 the text within about 1.5 words of the speaker on average, against about 9.4 words and growing drift
@@ -165,5 +165,10 @@ build doesn't use it at all.
 
 ## Credits
 
-Inspired by [Moody](https://moody.mjarosz.com). The name and icon are an affectionate nod to a certain
-1984 movie about a very persistent cyborg; no affiliation, and no likeness of anyone was used.
+Inspired by [Moody](https://moody.mjarosz.com). The name and the 16-bit icon are a parody of, and an
+affectionate nod to, a certain 1984 movie about a very persistent cyborg. No affiliation with or
+endorsement by anyone involved.
+
+**Publishing your own copy?** Swap the icon first: the App Store rejects apps that use a real
+person's likeness without permission. Delete `Resources/AppIcon.png` and the build falls back to an
+original pixel-art robot icon drawn by `scripts/make-icon.swift`, or drop in your own square PNG.

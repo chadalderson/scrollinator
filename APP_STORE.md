@@ -13,6 +13,10 @@ already produces a sandboxed, universal (Apple Silicon + Intel) app with:
 
 What's left happens in your Apple accounts. If you publish it, please make it free.
 
+**Change the icon first.** The repo's icon is a parody featuring a real actor's likeness, which App
+Review rejects without permission. Delete `Resources/AppIcon.png` to get the original pixel-art robot
+icon instead (drawn by `scripts/make-icon.swift`), or replace it with your own square PNG.
+
 ## 1. Apple Developer setup (one time)
 
 1. Join the **Apple Developer Program**.
