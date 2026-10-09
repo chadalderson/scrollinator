@@ -90,6 +90,20 @@ private struct ScriptSidebar: View {
                 }
                 .padding(.horizontal, 8)
             }
+
+            Rectangle().fill(Theme.line).frame(height: 1)
+            SettingsLink {
+                Label("Settings", systemImage: "gearshape")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Settings (⌘,)")
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Theme.card)
         }
     }
 }

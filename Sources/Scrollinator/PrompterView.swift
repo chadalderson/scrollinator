@@ -27,6 +27,47 @@ final class PrompterPanel: NSPanel {
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
 }
 
+/// "■ End": ends the prompting session, closing the prompter and stopping any recording.
+private final class EndButton: NSView {
+    private let label = NSTextField(labelWithString: "End")
+    private let square = NSView()
+    private static let red = NSColor(calibratedRed: 1, green: 0.30, blue: 0.27, alpha: 1)
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        layer?.cornerRadius = 9
+        layer?.backgroundColor = Self.red.withAlphaComponent(0.18).cgColor
+        label.font = .systemFont(ofSize: 11, weight: .semibold)
+        label.textColor = Self.red
+        square.wantsLayer = true
+        square.layer?.cornerRadius = 1.5
+        square.layer?.backgroundColor = Self.red.cgColor
+        addSubview(square)
+        addSubview(label)
+        toolTip = "End session (stops any recording)"
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
+        setAccessibilityLabel("End session")
+    }
+
+    required init?(coder: NSCoder) { fatalError("not used") }
+
+    var preferredWidth: CGFloat { 7 + 6 + 4 + ceil(label.intrinsicContentSize.width) + 2 + 6 }
+
+    override func layout() {
+        super.layout()
+        let h = bounds.height
+        square.frame = NSRect(x: 7, y: ((h - 6) / 2).rounded(), width: 6, height: 6)
+        let size = label.intrinsicContentSize
+        label.frame = NSRect(x: 17, y: ((h - size.height) / 2).rounded(), width: ceil(size.width) + 2, height: ceil(size.height))
+    }
+
+    override var isFlipped: Bool { true }
+    /// The prompter handles clicks itself.
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}
+
 final class FlippedView: NSView {
     override var isFlipped: Bool { true }
 }
@@ -153,7 +194,7 @@ final class PrompterView: NSView {
     private let fade = CAGradientLayer()
     private let waveform = WaveformView()
     private let playIcon = NSImageView()
-    private let closeIcon = NSImageView()
+    private let endButton = EndButton()
     private let slowerIcon = NSImageView()
     private let fasterIcon = NSImageView()
     private let speedLabel = NSTextField(labelWithString: "")
@@ -194,12 +235,12 @@ final class PrompterView: NSView {
 
         addSubview(waveform)
 
-        for icon in [playIcon, closeIcon, slowerIcon, fasterIcon] {
-            icon.symbolConfiguration = .init(pointSize: icon === playIcon || icon === closeIcon ? 11 : 10, weight: .bold)
+        addSubview(endButton)
+        for icon in [playIcon, slowerIcon, fasterIcon] {
+            icon.symbolConfiguration = .init(pointSize: icon === playIcon ? 11 : 10, weight: .bold)
             icon.contentTintColor = NSColor.white.withAlphaComponent(0.5)
             addSubview(icon)
         }
-        closeIcon.image = NSImage(systemSymbolName: "xmark", accessibilityDescription: "Hide prompter")
         slowerIcon.image = NSImage(systemSymbolName: "minus", accessibilityDescription: "Slower")
         fasterIcon.image = NSImage(systemSymbolName: "plus", accessibilityDescription: "Faster")
         speedLabel.font = .monospacedDigitSystemFont(ofSize: 11, weight: .semibold)
@@ -257,9 +298,9 @@ final class PrompterView: NSView {
         let iconSize: CGFloat = 16
         let iconY = ((band - iconSize) / 2).rounded()
 
-        // Close on the left, where macOS puts it, then play/pause.
-        closeIcon.frame = NSRect(x: side - 2, y: iconY, width: iconSize, height: iconSize)
-        playIcon.frame = NSRect(x: closeIcon.frame.maxX + 10, y: iconY, width: iconSize, height: iconSize)
+        // End on the left, where macOS puts close buttons, then play/pause.
+        endButton.frame = NSRect(x: side - 4, y: ((band - 18) / 2).rounded(), width: endButton.preferredWidth, height: 18)
+        playIcon.frame = NSRect(x: endButton.frame.maxX + 6, y: iconY, width: iconSize, height: iconSize)
 
         // Right: speed controls, then the follow dot at the edge.
         followDot.frame = NSRect(x: w - side - 6, y: (iconY + iconSize / 2 - 3).rounded(), width: 6, height: 6)
@@ -284,7 +325,7 @@ final class PrompterView: NSView {
         let timeSize = recordLabel.intrinsicContentSize
         let recordWidth = 10 + ceil(timeSize.width)
         let recordX = attachedToTop && notchInset > 0
-            ? playIcon.frame.maxX + 12
+            ? playIcon.frame.maxX + 10
             : ((w - recordWidth) / 2).rounded()
         recordDot.frame = NSRect(x: recordX, y: followDot.frame.minY, width: 6, height: 6)
         recordLabel.frame = NSRect(
@@ -478,7 +519,7 @@ final class PrompterView: NSView {
         let p = convert(event.locationInWindow, from: nil)
         if playIcon.frame.insetBy(dx: -5, dy: -8).contains(p) {
             onTogglePause?()
-        } else if closeIcon.frame.insetBy(dx: -5, dy: -8).contains(p) {
+        } else if endButton.frame.insetBy(dx: -3, dy: -6).contains(p) {
             onClose?()
         } else if !slowerIcon.isHidden && slowerIcon.frame.insetBy(dx: -4, dy: -8).contains(p) {
             repeatWhileHeld(-1)
