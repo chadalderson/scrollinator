@@ -19,6 +19,11 @@ struct ScriptAligner {
     private let nearbyAhead = 60
     private let nearbyMinScore: Double = 2.2
     private let anywhereMinScore: Double = 4.5
+    /// Caps on how much matching evidence can carry forward, so a strong run of old words can't
+    /// pay for skipping ahead to a lone short word (an "I" in an ad-lib matching an "I" further on).
+    /// A new position has to be earned by the words just spoken.
+    private let nearbyCap: Double = 3.0
+    private let anywhereCap: Double = 5.0
     private let gapPenalty: Double = 0.5
 
     init(text: String) {
@@ -48,8 +53,8 @@ struct ScriptAligner {
 
         let lo = max(0, position - nearbyBehind)
         let hi = min(words.count, max(position, 0) + nearbyAhead)
-        if let found = bestMatch(heard, in: lo..<hi, minScore: nearbyMinScore)
-            ?? bestMatch(heard, in: 0..<words.count, minScore: anywhereMinScore) {
+        if let found = bestMatch(heard, in: lo..<hi, minScore: nearbyMinScore, cap: nearbyCap)
+            ?? bestMatch(heard, in: 0..<words.count, minScore: anywhereMinScore, cap: anywhereCap) {
             position = found
             return found
         }
@@ -59,7 +64,7 @@ struct ScriptAligner {
     /// Smith-Waterman local alignment of the heard words against a slice of the script.
     /// The match must end on one of the last two heard words actually matching a script word,
     /// so it describes where the speaker is now: older words matching says nothing about an ad-lib.
-    private func bestMatch(_ heard: [String], in range: Range<Int>, minScore: Double) -> Int? {
+    private func bestMatch(_ heard: [String], in range: Range<Int>, minScore: Double, cap: Double) -> Int? {
         let n = heard.count, m = range.count
         guard m > 0 else { return nil }
         var prev = [Double](repeating: 0, count: m + 1)
@@ -70,8 +75,9 @@ struct ScriptAligner {
             for j in 1...m {
                 let similarity = Self.similarity(heard[i - 1], words[range.lowerBound + j - 1].key)
                 let diag = prev[j - 1] + similarity
-                cur[j] = max(0, diag, prev[j] - gapPenalty, cur[j - 1] - gapPenalty)
-                guard i >= n - 1, similarity > 0, cur[j] == diag, cur[j] >= minScore else { continue }
+                let raw = max(0, diag, prev[j] - gapPenalty, cur[j - 1] - gapPenalty)
+                cur[j] = min(raw, cap)
+                guard i >= n - 1, similarity > 0, raw == diag, cur[j] >= minScore else { continue }
                 // A last word that didn't match (often half-recognized) is assumed to follow on.
                 let end = min(range.lowerBound + j - 1 + (n - i), words.count - 1)
                 if let b = best {

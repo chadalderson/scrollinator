@@ -24,16 +24,14 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
     private var timer: Timer?
     private var lastTick: CFTimeInterval = 0
     private var offset: CGFloat = 0
-    /// Current scroll speed in points per second, eased toward the target.
+    /// Current scroll speed in points per second, eased toward the target (see ScrollMotion).
     private var velocity: CGFloat = 0
-    /// Speeding up approaches the set pace exponentially: about 95% of it within 0.45 s.
-    private let takeOffTime: CGFloat = 0.15
-    /// Slowing down brakes at a steady rate, like a car: from full pace to a stop in 0.6 s.
-    private let brakeTime: CGFloat = 0.6
     private var countdownEnds: CFTimeInterval = 0
     private var currentScriptID: Script.ID?
     private var loadedBody: String?
-    private var wordCount = 0
+    /// The script's words (same tokens as speech matching) and where they sit in the layout.
+    private var wordRanges: [NSRange] = []
+    private var wordLayout = WordLayout(ends: [], maxOffset: 0)
     private var appliedStyle = ""
     private var cancellables = Set<AnyCancellable>()
 
@@ -165,6 +163,7 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
         view.onResizeEnded = { [weak self] in
             if let size = self?.panel?.frame.size { Pref.prompterSize = size }
         }
+        view.onRelayout = { [weak self] in self?.layoutChanged() }
         self.panel = panel
         self.view = view
         updateSpeedDisplay()
@@ -230,13 +229,33 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
 
     private func reloadText() {
         guard let view else { return }
-        let fontSize = Pref.fontSize
         let color = Pref.textColor
+        wordRanges = ScriptAligner.tokens(in: loadedBody ?? "").map(\.range)
+        let (text, lineHeight) = Self.styledText(loadedBody ?? "", fontSize: Pref.fontSize, color: color)
+        view.setText(text, accent: color, lineHeight: lineHeight)   // reflows, then layoutChanged()
+        appliedStyle = styleKey
+        follower.load(loadedBody ?? "")
+    }
+
+    /// The text reflowed (font, width or script change). Rebuild the word map and keep the same
+    /// word at the reading line, so changing size mid-read doesn't lose the reader's place.
+    private func layoutChanged() {
+        guard let view else { return }
+        let reading = offset > 0.5 ? wordLayout.word(atOffset: offset) : nil
+        wordLayout = WordLayout(
+            ends: wordRanges.map { view.followOffset(forCharacterAt: NSMaxRange($0) - 1) ?? 0 },
+            maxOffset: maxOffset
+        )
+        offset = clampOffset(reading.map { wordLayout.offset(atWord: $0) } ?? 0)
+        view.offset = offset
+    }
+
+    /// The script as the prompter draws it, and its line height.
+    static func styledText(_ body: String, fontSize: CGFloat, color: NSColor) -> (NSAttributedString, CGFloat) {
         let font = NSFont.systemFont(ofSize: fontSize, weight: .semibold)
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = (fontSize * 0.18).rounded()
-        wordCount = Script(title: "", body: loadedBody ?? "").wordCount
-        let text = NSMutableAttributedString(string: loadedBody ?? "", attributes: [
+        let text = NSMutableAttributedString(string: body, attributes: [
             .font: font,
             .foregroundColor: color,
             .paragraphStyle: paragraph,
@@ -251,12 +270,7 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
                 text.addAttributes([.font: blankFont, .paragraphStyle: blankParagraph], range: enclosing)
             }
         }
-        let lineHeight = NSLayoutManager().defaultLineHeight(for: font) + paragraph.lineSpacing
-        view.setText(text, accent: color, lineHeight: lineHeight)
-        appliedStyle = styleKey
-        follower.load(loadedBody ?? "")
-        offset = clampOffset(offset)
-        view.offset = offset
+        return (text, NSLayoutManager().defaultLineHeight(for: font) + paragraph.lineSpacing)
     }
 
     private var styleKey: String { "\(Pref.fontSize)|\(Pref.textColor.hexString)" }
@@ -314,29 +328,23 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
     /// Live measured pace while following words; the adjustable set speed otherwise.
     private func updateSpeedDisplay() {
         guard let view else { return }
-        guard isTrackingWords, wordCount > 0, view.textHeight > 0 else {
+        guard isTrackingWords, !wordRanges.isEmpty else {
             view.setSpeed(.adjustable(Int(Pref.speed)))
             return
         }
-        let pointsPerWord = view.textHeight / CGFloat(wordCount)
-        let wpm = pacer.currentPace(pointsPerSecond) / pointsPerWord * 60
-        view.setSpeed(.measured(Int(wpm.rounded())))
+        view.setSpeed(.measured(Int((pacer.currentPace(wordsPerSecond) * 60).rounded())))
     }
 
     /// Recognition matched the speaker to a script word, spoken `lag` seconds ago.
     private func spoke(wordAt index: Int, lag: Double) {
-        guard let view, follower.aligner.words.indices.contains(index) else { return }
-        let range = follower.aligner.words[index].range
-        guard let target = view.followOffset(forCharacterAt: NSMaxRange(range) - 1) else { return }
-        pacer.anchor(clampOffset(target), lag: lag, setPace: pointsPerSecond)
+        guard wordRanges.indices.contains(index) else { return }
+        pacer.anchor(word: index, lag: lag, setPace: wordsPerSecond)
     }
 
     /// The user scrolled or jumped: look for the speaker from the new spot.
     private func userMoved() {
-        guard let view else { return }
         pacer.reset()
-        let character = view.characterIndex(atOffset: offset)
-        follower.reposition(toWord: follower.aligner.wordIndex(atCharacter: character) - 1)
+        follower.reposition(toWord: Int(wordLayout.word(atOffset: offset).rounded(.down)))
     }
 
     // MARK: Scrolling
@@ -346,12 +354,8 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
         return max(0, view.textHeight - view.lineHeight)
     }
 
-    /// Turns words per minute into scroll speed using how tall this script's text actually is,
-    /// so the setting holds at any font size or prompter width.
-    private var pointsPerSecond: CGFloat {
-        guard let view, wordCount > 0 else { return 0 }
-        return CGFloat(Pref.speed / 60) * view.textHeight / CGFloat(wordCount)
-    }
+    /// The set speed. The word map turns it into scroll speed for the current layout.
+    private var wordsPerSecond: Double { Pref.speed / 60 }
 
     private func clampOffset(_ value: CGFloat) -> CGFloat {
         min(max(value, 0), maxOffset)
@@ -391,35 +395,12 @@ final class PrompterController: NSObject, ObservableObject, NSWindowDelegate {
         let running = isPlaying && !hovering && !counting
         let advancing = running && (!voiceMode || voice.isSpeaking)
         let following = voiceMode && isFollowing
-        let pace = following ? pacer.currentPace(pointsPerSecond) : pointsPerSecond
-        var target = advancing ? pace : 0
-        var immediate = false
-        if following {
-            switch pacer.command(
-                offset: offset, speaking: advancing, dt: dt, setPace: pointsPerSecond, lineHeight: view.lineHeight
-            ) {
-            case .cruise(let speed): target = speed
-            case .jump(let speed): target = speed; immediate = true
-            }
-        }
-        let step = CGFloat(dt)
-        if !running {
-            velocity = 0
-        } else if immediate {
-            velocity = target
-        } else if target > velocity {
-            velocity += (target - velocity) * (1 - exp(-step / takeOffTime))
-        } else {
-            velocity = max(target, velocity - max(pace, 1) / brakeTime * step)
-        }
-        if velocity != 0 {
-            // Only a jump back to text being re-read moves backward.
-            offset = clampOffset(offset + velocity * step)
-            if offset >= maxOffset && velocity > 0 {
-                isPlaying = false
-                velocity = 0
-            }
-        }
+        let reachedEnd = ScrollMotion.step(
+            offset: &offset, velocity: &velocity, pacer: &pacer,
+            dt: dt, running: running, speaking: !voiceMode || voice.isSpeaking, following: following,
+            wordsPerSecond: wordsPerSecond, layout: wordLayout, lineHeight: view.lineHeight, maxOffset: maxOffset
+        )
+        if reachedEnd { isPlaying = false }
 
         view.offset = offset
         view.setPlaying(isPlaying)

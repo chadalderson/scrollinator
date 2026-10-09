@@ -2,12 +2,13 @@ import CoreGraphics
 
 /// Turns word positions from speech recognition into a smooth scroll speed.
 ///
-/// Each recognition sets a predicted position, which then moves on at the speaker's measured pace
-/// for a short while; the scroll speed is that pace plus a gentle pull toward the prediction.
-/// Pace is measured in points per second of speaking, so pauses don't drag it down, and starts at
-/// the user's set pace. If recognitions stop while the speaker keeps talking (an ad-lib, or a jump
-/// not yet found) the prediction stops too and the text holds; after a long stretch without any,
-/// recognition is probably struggling and it falls back to plain pace.
+/// It works in words, the way people read: each recognition sets a predicted word position,
+/// which then moves on at the speaker's measured pace (words per second of speaking, so pauses
+/// don't drag it down) for a short while. Every frame the prediction is placed in the current
+/// layout, so short lines, paragraph gaps and font or width changes don't distort it. The scroll
+/// speed follows the prediction plus a gentle pull toward it. If recognitions stop while the
+/// speaker keeps talking (an ad-lib, or a jump not yet found) the prediction stops and the text
+/// holds; after a long stretch without any, it falls back to plain pace.
 struct PaceFollower {
     enum Command {
         /// Ease toward this speed (take-off and braking apply).
@@ -25,11 +26,13 @@ struct PaceFollower {
     /// Pace is measured over this much recent speaking time.
     var paceWindow: Double = 12
 
-    private(set) var measuredPace: CGFloat?
-    private var predicted: CGFloat?
+    /// Words per second of speaking.
+    private(set) var measuredPace: Double?
+    /// Fractional word position the speaker is predicted to be at.
+    private var predicted: Double?
     private var speakingClock: Double = 0
     private var lastAnchorClock: Double = -.infinity
-    private var anchors: [(clock: Double, offset: CGFloat)] = []
+    private var anchors: [(clock: Double, word: Double)] = []
 
     var isLocked: Bool { predicted != nil }
 
@@ -41,36 +44,49 @@ struct PaceFollower {
         lastAnchorClock = -.infinity
     }
 
-    func currentPace(_ setPace: CGFloat) -> CGFloat { measuredPace ?? setPace }
+    /// Words per second: measured, or the set pace until there's enough to measure.
+    func currentPace(_ setPace: Double) -> Double { measuredPace ?? setPace }
 
-    /// Recognition placed the speaker at this scroll offset `lag` seconds ago.
-    mutating func anchor(_ target: CGFloat, lag: Double, setPace: CGFloat) {
-        // A big jump starts pace measurement over; it says nothing about speed.
-        if let last = anchors.last, abs(target - last.offset) > max(setPace, 1) * 6 { anchors.removeAll() }
-        anchors.append((speakingClock - lag, target))
+    /// Recognition heard script word `word`, spoken `lag` seconds ago.
+    mutating func anchor(word: Int, lag: Double, setPace: Double) {
+        let position = Double(word)
+        // A skip or re-read starts pace measurement over: moving further than anyone could read
+        // in the time since the last recognized word (or backward) says nothing about speed.
+        if let last = anchors.last {
+            let elapsed = max(speakingClock - lag - last.clock, 0)
+            let plausible = 4 + currentPace(setPace) * elapsed * 2
+            if position - last.word > plausible || position < last.word - 2 { anchors.removeAll() }
+        }
+        anchors.append((speakingClock - lag, position))
         anchors.removeAll { speakingClock - $0.clock > paceWindow }
         if let first = anchors.first, let last = anchors.last, last.clock - first.clock >= 3 {
-            let pace = (last.offset - first.offset) / CGFloat(last.clock - first.clock)
+            let pace = (last.word - first.word) / (last.clock - first.clock)
             let clamped = min(max(pace, setPace * 0.5), setPace * 2)
             measuredPace = measuredPace.map { $0 * 0.7 + clamped * 0.3 } ?? clamped
         }
-        predicted = target + currentPace(setPace) * CGFloat(lag)
+        predicted = position + currentPace(setPace) * lag
         lastAnchorClock = speakingClock
     }
 
-    /// Speed to scroll at this tick. `speaking` is false while silent, hovered or paused.
-    mutating func command(offset: CGFloat, speaking: Bool, dt: Double, setPace: CGFloat, lineHeight: CGFloat) -> Command {
+    /// Speed to scroll at this tick, in points per second. `speaking` is false while silent,
+    /// hovered or paused.
+    mutating func command(
+        offset: CGFloat, speaking: Bool, dt: Double, setPace: Double, layout: WordLayout, lineHeight: CGFloat
+    ) -> Command {
         let pace = currentPace(setPace)
         guard speaking else { return .cruise(0) }
         speakingClock += dt
         let sinceAnchor = speakingClock - lastAnchorClock
         if sinceAnchor > giveUpAfter { predicted = nil }
-        guard var target = predicted else { return .cruise(pace) }
+        guard var position = predicted else {
+            return .cruise(CGFloat(pace) * layout.pointsPerWord(atWord: layout.word(atOffset: offset)))
+        }
 
         // Carry the prediction forward only shortly past the last recognized word.
         let leading = sinceAnchor <= maxLead
-        if leading { target += pace * CGFloat(dt) }
-        predicted = target
+        if leading { position += pace * dt }
+        predicted = position
+        let target = layout.offset(atWord: position)
 
         let gap = target - offset
         // Skipping ahead, or text the speaker is reading has scrolled out of sight above:
@@ -78,7 +94,10 @@ struct PaceFollower {
         if gap > lineHeight * 3 || gap < -lineHeight * 1.2 {
             return .jump(gap / 0.5)
         }
-        let feedForward = leading ? pace : 0
-        return .cruise(min(max(feedForward + correctionGain * gap, 0), pace * 2.5))
+        // Base speed from the average word spacing around the prediction, not the frame-to-frame
+        // step: a paragraph gap is a sudden step that would otherwise spike the speed and overshoot.
+        let local = CGFloat(pace) * layout.pointsPerWord(atWord: position)
+        let feedForward = leading ? local : 0
+        return .cruise(min(max(feedForward + correctionGain * gap, 0), local * 2.5))
     }
 }

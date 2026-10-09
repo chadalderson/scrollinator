@@ -129,6 +129,8 @@ final class PrompterView: NSView {
     var onScroll: ((CGFloat) -> Void)?
     var onMoveEnded: (() -> Void)?
     var onResizeEnded: (() -> Void)?
+    /// The text reflowed (new text, font or width).
+    var onRelayout: (() -> Void)?
 
     /// Height of the camera housing when the panel is flush with the top of a notched screen.
     var notchInset: CGFloat = 0 {
@@ -308,6 +310,7 @@ final class PrompterView: NSView {
         textHeight = ceil(manager.usedRect(for: container).height)
         textView.setFrameSize(NSSize(width: width, height: textHeight + lineHeight))
         positionText()
+        onRelayout?()
     }
 
     /// First line starts just below the top fade; offset scrolls the text upward.
@@ -330,13 +333,6 @@ final class PrompterView: NSView {
         let glyphEnd = manager.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: container).maxX
         let fraction = used.width > 0 ? min(max(glyphEnd / used.maxX, 0), 1) : 1
         return line.minY - line.height * (1 - fraction)
-    }
-
-    /// Character at the start of the line being read at a scroll offset (the inverse of the above).
-    func characterIndex(atOffset offset: CGFloat) -> Int {
-        guard let manager = textView.layoutManager, let container = textView.textContainer else { return 0 }
-        let glyph = manager.glyphIndex(for: NSPoint(x: 0, y: offset + lineHeight * 0.5), in: container)
-        return manager.characterIndexForGlyph(at: glyph)
     }
 
     // MARK: State from the controller

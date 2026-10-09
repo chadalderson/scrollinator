@@ -146,7 +146,9 @@ script and press **Start Prompting** (⌘↩). Allow microphone and speech recog
 | `VoiceDetector.swift` | Mic input; speech detection by loudness over an adaptive noise floor, voice-band filtering, pitch (autocorrelation) and sustain |
 | `SpeechFollower.swift` | On-device recognition: SpeechAnalyzer on macOS 26, SFSpeechRecognizer before that |
 | `ScriptAligner.swift` | Fuzzy-matches the last words heard to the script (Smith-Waterman local alignment) to find your place |
-| `PaceFollower.swift` | Blends recognized positions with your measured pace into a smooth scroll speed; holds during ad-libs |
+| `PaceFollower.swift` | Predicts your position in words from what was recognized and your measured pace; holds during ad-libs |
+| `WordLayout.swift` | Where every word sits in the current layout, so following works in words at any size, and you keep your place when the font or width changes |
+| `ScrollMotion.swift` | One frame of motion: quick take-off, braking, and following (shared by the app and the tracking test) |
 | `SessionRecorder.swift` | Session recording to MP3 (LAME) or M4A (AVFoundation), sandbox-safe folder access |
 | `HotKeys.swift` | Global shortcuts via `RegisterEventHotKey` (no Accessibility permission needed) |
 | `ScriptStore.swift`, `EditorView.swift` | Scripts saved as JSON in Application Support, and the editor |
@@ -156,6 +158,23 @@ script and press **Start Prompting** (⌘↩). Allow microphone and speech recog
 In development tests with synthesized speech whose pace swung between 140 and 220 wpm, following kept
 the text within about 1.5 words of the speaker on average, against about 9.4 words and growing drift
 at a fixed speed.
+
+## Testing tracking
+
+`Tests/Tracking/run.sh` checks that **Follow my words** stays on the speaker at every prompter size.
+macOS text-to-speech reads the practice script at speeds from 140 to 220 wpm; the audio goes through
+the app's real speech recognition once, and that recording is replayed through the app's real layout
+and scrolling code at 25 sizes (300×120 to 1400×400, 16 to 72 pt) plus font and width changes
+mid-read. A second run adds an ad-lib, a re-read and a skip. It prints how far the reading line
+strays from the speaker and PASS or FAIL.
+
+```sh
+Tests/Tracking/run.sh          # replay the saved recordings (fast)
+Tests/Tracking/run.sh record   # re-record first (about 3.5 minutes; needs macOS 26)
+```
+
+Typical results: within about 1 word on average at every size, ending exactly on the last word.
+To see what recognition hears while you use the app, launch it with `SCROLLINATOR_DEBUG_SPEECH=1`.
 
 ## Contributing
 

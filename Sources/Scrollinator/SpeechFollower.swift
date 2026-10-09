@@ -149,8 +149,17 @@ final class SpeechFollower: ObservableObject {
         status = .off
     }
 
+    /// Set SCROLLINATOR_DEBUG_SPEECH=1 to log what recognition heard and where it placed the speaker.
+    private let debug = ProcessInfo.processInfo.environment["SCROLLINATOR_DEBUG_SPEECH"] != nil
+
     private func heard(_ transcript: String, lag: Double) {
-        guard active, let index = aligner.update(recognized: transcript) else { return }
+        guard active else { return }
+        let index = aligner.update(recognized: transcript)
+        if debug {
+            let tail = transcript.split(whereSeparator: \.isWhitespace).suffix(10).joined(separator: " ")
+            print("[speech] …\(tail)" + (index.map { " -> word \($0) (\(aligner.words[$0].key))" } ?? ""))
+        }
+        guard let index else { return }
         lastMatch = CACurrentMediaTime()
         status = .following
         onMatch?(index, lag)
